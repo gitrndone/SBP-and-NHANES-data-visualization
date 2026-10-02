@@ -1,0 +1,415 @@
+---
+title: "Blood Pressure in America: A NHANES Analysis, 2013-2018"
+author: "G Crawford-Gee"
+date: "`r Sys.Date()`"
+output: 
+  pdf_document:
+    latex_engine: xelatex
+---
+
+# Introduction
+
+## The National Health and Nutrition Examination Survey (NHANES) collects medical and demographic information from people in the United States. For this assessment, blood pressure and demographic data from three NHANES survey cycles, 2013–2014, 2015–2016, and 2017–2018, will be prepared for analysis.
+
+## Before asking the data to answer any questions, we first need to make sure it is speaking the same language. This report outlines the main data cleaning, manipulation, and tidying steps used to prepare the datasets. The data will be imported, cleaned, reshaped and organized as well as examined for any missing values, unhelpful numbering, and general consistency across the three survey cycles before being combined for further analysis. 
+
+# Exercise 2: Data import and preliminary exploration
+
+```{r chunk1, include=FALSE} 
+# Import and load libraries
+
+library(pacman)
+pacman::p_load(tidyverse, rio, here, janitor, skimr)
+
+# Six NHANES datasets were imported using import() from the rio package.
+bp_2013_2014 <- import(here("NHANES Data", "bloodpressure_2013-2014.xpt"))
+bp_2015_2016 <- import(here("NHANES Data", "bloodpressure_2015-2016.xpt"))
+bp_2017_2018 <- import(here("NHANES Data", "bloodpressure_2017-2018.xpt"))
+
+demo_2013_2014 <- import(here("NHANES Data", "demographic_2013-2014.xpt"))
+demo_2015_2016 <- import(here("NHANES Data", "demographic_2015-2016.xpt"))
+demo_2017_2018 <- import(here("NHANES Data", "demographic_2017-2018.xpt"))
+```
+
+### The dimensions of each dataset were examined using the `dim()` function.
+
+```{r dimensions}
+dim(bp_2013_2014)
+dim(bp_2015_2016)
+dim(bp_2017_2018)
+
+dim(demo_2013_2014)
+dim(demo_2015_2016)
+dim(demo_2017_2018)
+```
+
+### The blood pressure datasets contain between 8,704 and 9,813 observations and between 21 and 23 variables. The demographic datasets contain between 9,254 and 10,175 observations and between 46 and 47 variables.
+
+| Dataset | Observations | Variables |
+|---|---:|---:|
+| Blood pressure 2013–2014 | 9,813 | 23 |
+| Blood pressure 2015–2016 | 9,544 | 21 |
+| Blood pressure 2017–2018 | 8,704 | 21 |
+| Demographics 2013–2014 | 10,175 | 47 |
+| Demographics 2015–2016 | 9,971 | 47 |
+| Demographics 2017–2018 | 9,254 | 46 |
+
+## Variable Types
+
+The structure of each dataset was reviewed using `str()` to identify the types of variables present.
+
+```{r structure}
+str(bp_2013_2014)
+str(bp_2015_2016)
+str(bp_2017_2018)
+
+str(demo_2013_2014)
+str(demo_2015_2016)
+str(demo_2017_2018)
+```
+
+## Variables Requiring Different Formats
+
+### The datasets contain a combination of numeric (num) or integer (int) values which are appropriate for continuous measurements like blood pressure and age. However, some variables are categorical variables that happen to be represented by numbers like the multiple language variables, as well as gender or marital status and will need to be converted during cleaning and recoding. However, since exercise 4 specifically asks to recode Gender and Marital status, I'll use those as my examples of variables that are not in the correct format.
+
+| Variable | Current type | Recommended type | Reason |
+|---|---|---|---|
+| `RIAGENDR` | Numeric | Factor | Represents gender groups (categories) rather than quantities or numerical measurement. Treating these codes like actual numbers could lead to inappropriate calculations or interpretations. |
+| `DMDMARTL` | Numeric | Factor | Represents marital-status categories rather than quantities or numerical measurement. Treating these codes like actual numbers could lead to inappropriate calculations or interpretations. |
+
+# Exercise 3 Merging and preparing datasets
+
+```{r chunk2, include=FALSE}
+## Create blood pressure dataset that only keeps 10 columns as required by assignment.
+bp_2013_2014_selected <- bp_2013_2014 %>%
+  select(SEQN, PEASCCT1, BPXSY1, BPXDI1, BPXSY2, BPXDI2, BPXSY3, BPXDI3, BPXSY4, BPXDI4)
+
+bp_2015_2016_selected <- bp_2015_2016 %>%
+  select(SEQN, PEASCCT1, BPXSY1, BPXDI1, BPXSY2, BPXDI2, BPXSY3, BPXDI3, BPXSY4, BPXDI4)
+
+bp_2017_2018_selected <- bp_2017_2018 %>%
+  select(SEQN, PEASCCT1, BPXSY1, BPXDI1, BPXSY2, BPXDI2, BPXSY3, BPXDI3, BPXSY4, BPXDI4)
+  
+## tells R which NHANES wave each observation came from as a new column added to 3 datasets
+bp_2013_2014_selected <- bp_2013_2014_selected %>% mutate(wave_id = "2013-2014")
+bp_2015_2016_selected <- bp_2015_2016_selected %>% mutate(wave_id = "2015-2016")
+bp_2017_2018_selected <- bp_2017_2018_selected %>% mutate(wave_id = "2017-2018")
+  
+## Combine the three BP datasets
+bp_combined <- bind_rows(
+  bp_2013_2014_selected,
+  bp_2015_2016_selected,
+  bp_2017_2018_selected
+)
+
+# Double Check BP
+dim(bp_combined)
+
+## Create demographics dataset that only keeps 9 columns as required by assignment.
+demo_2013_2014_selected <- demo_2013_2014 %>%
+  select(SEQN, RIAGENDR, RIDAGEYR, RIDRETH1, RIDRETH3, DMDEDUC2, DMDMARTL, DMDFMSIZ, INDFMIN2)
+
+demo_2015_2016_selected <- demo_2015_2016 %>%
+  select(SEQN, RIAGENDR, RIDAGEYR, RIDRETH1, RIDRETH3, DMDEDUC2, DMDMARTL, DMDFMSIZ, INDFMIN2)
+
+demo_2017_2018_selected <- demo_2017_2018 %>%
+  select(SEQN, RIAGENDR, RIDAGEYR, RIDRETH1, RIDRETH3, DMDEDUC2, DMDMARTL, DMDFMSIZ, INDFMIN2)
+
+## tells R which NHANES wave each observation came from as a new column added to 3 datasets
+demo_2013_2014_selected <- demo_2013_2014_selected %>% mutate(wave_id = "2013-2014")
+demo_2015_2016_selected <- demo_2015_2016_selected %>% mutate(wave_id = "2015-2016")
+demo_2017_2018_selected <- demo_2017_2018_selected %>% mutate(wave_id = "2017-2018")
+
+## Combine the three demographic waves into one dataset
+demo_combined <- bind_rows(
+  demo_2013_2014_selected,
+  demo_2015_2016_selected,
+  demo_2017_2018_selected
+)
+
+# Double Check Demographic
+dim(demo_combined)
+
+## Join BP and demographic data
+nhanes_merged <- full_join(
+  demo_combined,
+  bp_combined,
+  by = c("SEQN", "wave_id")
+)
+
+## Double check final dimensions
+dim(nhanes_merged)
+head(nhanes_merged)
+table(nhanes_merged$wave_id)
+```
+
+## What are the dimension of the final merged dataset? 
+
+### 29,400 observations and 19 variables (29,400 × 19).
+
+## How do these dimension compare to the dimensions of the combined datasets used to create it?
+
+### The combined blood pressure dataset contains 28,061 observations and 11 variables, while the combined demographic dataset contains 29,400 observations and 10 variables. After merging, the final dataset contains 29,400 observations and 19 variables. 
+
+### The number of observations remains 29,400 because the demographic dataset contains 29,400 participants, while the blood pressure data represent a subset of these participants. The `full_join()` retains all observations from both datasets, including participants who do not have blood pressure measurements. 
+
+### The number of variables increases from 10 and 11 to 19 because the two datasets are combined using `SEQN` and `wave_id` as matching variables. These two variables are shared by both datasets and only included once in the final dataset. Thus, the number of variables is calculated as: 10 + 11 - 2 = 19.
+
+# Exercise 4 Data cleaning and variable recoding
+
+```{r chunk3}
+# Skim data
+skim(nhanes_merged)
+
+## Clean column names
+nhanes_clean <- nhanes_merged %>%
+  clean_names()
+
+names(nhanes_clean)
+
+nhanes_clean <- nhanes_clean %>%
+  rename(
+    participant_id = seqn,
+    gender = riagendr,
+    age_years = ridageyr,
+    ethnicity_original = ridreth1,
+    ethnicity_asian = ridreth3,
+    education = dmdeduc2,
+    marital_status = dmdmartl,
+    family_size = dmdfmsiz,
+    family_income = indfmin2,
+    bp_comment = peascct1,
+    systolic_1 = bpxsy1,
+    diastolic_1 = bpxdi1,
+    systolic_2 = bpxsy2,
+    diastolic_2 = bpxdi2,
+    systolic_3 = bpxsy3,
+    diastolic_3 = bpxdi3,
+    systolic_4 = bpxsy4,
+    diastolic_4 = bpxdi4
+  )
+
+## Standardize and recode variables
+nhanes_clean <- nhanes_clean %>%
+  mutate(
+    gender = case_when(
+      gender == 1 ~ "Male",
+      gender == 2 ~ "Female",
+      TRUE ~ NA_character_
+    ),
+    gender = factor(gender)
+  )
+
+table(nhanes_clean$gender, useNA = "ifany")
+
+nhanes_clean <- nhanes_clean %>%
+  mutate(
+    ethnicity = case_when(
+      ethnicity_asian == 1 ~ "Mexican American",
+      ethnicity_asian == 2 ~ "Other Hispanic",
+      ethnicity_asian == 3 ~ "Non-Hispanic White",
+      ethnicity_asian == 4 ~ "Non-Hispanic Black",
+      ethnicity_asian == 6 ~ "Non-Hispanic Asian",
+      ethnicity_asian == 7 ~ "Other Race/Multi-Racial",
+      TRUE ~ NA_character_
+    ),
+    ethnicity = factor(ethnicity)
+  )
+
+table(nhanes_clean$ethnicity, useNA = "ifany")
+
+nhanes_clean <- nhanes_clean %>%
+  mutate(
+    education = case_when(
+      education == 1 ~ "Less than 9th grade",
+      education == 2 ~ "9th-11th grade",
+      education == 3 ~ "High school graduate/GED",
+      education == 4 ~ "Some college/AA degree",
+      education == 5 ~ "College graduate or higher",
+      education %in% c(7, 9) ~ NA_character_,
+      TRUE ~ NA_character_
+    ),
+    education = factor(
+      education,
+      levels = c(
+        "Less than 9th grade",
+        "9th-11th grade",
+        "High school graduate/GED",
+        "Some college/AA degree",
+        "College graduate or higher"
+      ),
+      ordered = TRUE
+    )
+  )
+
+table(nhanes_clean$education, useNA = "ifany")
+
+nhanes_clean <- nhanes_clean %>%
+  mutate(
+    marital_status = case_when(
+      marital_status == 1 ~ "Married",
+      marital_status == 2 ~ "Widowed",
+      marital_status == 3 ~ "Divorced",
+      marital_status == 4 ~ "Separated",
+      marital_status == 5 ~ "Never married",
+      marital_status == 6 ~ "Living with partner",
+      marital_status %in% c(77, 99) ~ NA_character_,
+      TRUE ~ NA_character_
+    ),
+    marital_status = factor(marital_status)
+  )
+
+table(nhanes_clean$marital_status, useNA = "ifany")
+
+nhanes_clean <- nhanes_clean %>%
+  mutate(
+    family_income = case_when(
+      family_income %in% c(1, 2, 3, 4) ~ "Under $20,000",
+      family_income %in% c(5, 6, 7) ~ "$20,000-$44,999",
+      family_income %in% c(8, 9, 10) ~ "$45,000-$74,999",
+      family_income == 14 ~ "$75,000-$99,999",
+      family_income == 15 ~ "$100,000 or more",
+      family_income %in% c(12, 13) ~ NA_character_,
+      family_income %in% c(77, 99) ~ NA_character_,
+      TRUE ~ NA_character_
+    ),
+    family_income = factor(
+      family_income,
+      levels = c(
+        "Under $20,000",
+        "$20,000-$44,999",
+        "$45,000-$74,999",
+        "$75,000-$99,999",
+        "$100,000 or more"
+      ),
+      ordered = TRUE
+    )
+  )
+
+table(nhanes_clean$family_income, useNA = "ifany")
+
+nhanes_clean <- nhanes_clean %>%
+  mutate(
+    family_size_category = case_when(
+      family_size <= 2 ~ "1-2 people",
+      family_size <= 4 ~ "3-4 people",
+      family_size >= 5 ~ "5+ people",
+      TRUE ~ NA_character_
+    ),
+    family_size_category = factor(
+      family_size_category,
+      levels = c(
+        "1-2 people",
+        "3-4 people",
+        "5+ people"
+      ),
+      ordered = TRUE
+    )
+  )
+
+table(nhanes_clean$family_size_category, useNA = "ifany")
+
+nhanes_clean <- nhanes_clean %>%
+  mutate(
+    age_category = case_when(
+      age_years <= 17 ~ "0-17",
+      age_years <= 29 ~ "18-29",
+      age_years <= 44 ~ "30-44",
+      age_years <= 59 ~ "45-59",
+      age_years <= 74 ~ "60-74",
+      age_years >= 75 ~ "75+",
+      TRUE ~ NA_character_
+    ),
+    age_category = factor(
+      age_category,
+      levels = c(
+        "0-17",
+        "18-29",
+        "30-44",
+        "45-59",
+        "60-74",
+        "75+"
+      ),
+      ordered = TRUE
+    )
+  )
+
+table(nhanes_clean$age_category, useNA = "ifany")
+
+## Remove duplicate entries
+sum(duplicated(nhanes_clean))
+ 
+nhanes_clean <- nhanes_clean %>%
+  distinct()
+  
+sum(duplicated(nhanes_clean))
+```
+  
+```{r invalid-bp-readings, include=FALSE}
+## Invalid or Incomplete BP readings to NA
+nhanes_clean %>%
+  filter(!is.na(bp_comment)) %>%
+  select(
+    participant_id, wave_id, bp_comment,
+    systolic_1, diastolic_1, systolic_2, diastolic_2,
+    systolic_3, diastolic_3, systolic_4, diastolic_4
+  )
+  
+nhanes_clean <- nhanes_clean %>%
+  mutate(
+    across(
+      c(
+        systolic_1, diastolic_1, systolic_2, diastolic_2,
+        systolic_3, diastolic_3, systolic_4, diastolic_4
+      ),
+      ~ if_else(!is.na(bp_comment), NA_real_, .x)
+    )
+  )
+```
+```{r chunk5}
+## Final data checks
+dim(nhanes_clean)
+names(nhanes_clean)
+skim(nhanes_clean)
+
+## Export cleaned dataset
+export(
+  nhanes_clean,
+  here("NHANES Data", "NHANES_BP_2013_2018_cleaned.csv")
+)
+```
+# Exercise 5 Filtering and reshaping a dataset
+
+```{r chunk4}
+## Reshape the dataset for adult patients only and remove unnecessary columns, maybe because there are different parameters for an adults normal or baseline BP measurement than a child's normal or baseline BP measurement.
+
+nhanes_adult_wide <- nhanes_clean %>%
+  filter(age_years >= 18) %>%
+  select(
+    participant_id,
+    age_years,
+    gender,
+    wave_id,
+    systolic_1, diastolic_1,
+    systolic_2, diastolic_2,
+    systolic_3, diastolic_3,
+    systolic_4, diastolic_4
+  )
+
+## Pivot from wide format (where each participant has multiple BP measurements spread across several columns) to long format (where each row is a single BP measurement) because when making a graph or modelling, its easier with 'tidy data' where every variable (like BP) is a column and every distinct observation is a row.
+
+## names_to = c(".value", "reading_number") separates names such as "systolic_1" into the variable name ("systolic") and reading number ("1"). Each row will represent one blood pressure reading.
+
+nhanes_long <- nhanes_adult_wide %>%
+  pivot_longer(
+    cols = matches("^(systolic|diastolic)_\\d+"),
+    names_to = c(".value", "reading_number"),
+    names_sep = "_"
+  )
+
+## Check the dimensions and first eight rows of the longform dataset.
+dim(nhanes_long)
+head(nhanes_long, 8)
+```
+
+
