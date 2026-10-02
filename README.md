@@ -7,31 +7,20 @@ The purpose of this project is to build on previous NHANES analyses while applyi
 Repository Structure:
 
 data/
-Contains the datasets required for the analyses, including the cleaned NHANES dataset.
+
+Contains two datasets required for the analyses, including the cleaned NHANES dataset.
 
 figures/
-Contains saved figures from previous assignments that are reused in the Exercise 2 report and Exercise 3 dashboard.
-Tables include: 
-Overall sample size by NHANES wave.
-Number and percentage of males by wave.
-Number and percentage of participants in each ethnicity category by wave.
-Summary statistics for average systolic blood pressure by wave.
-Reproducibility
+
+Contains saved figures from previous Assignment Exercise 3.
 
 reports/
+
 Contains the the original PDF reports for all assignments and rendered PDF report for Assignment 4.
 
 scripts/
-Contains the R Markdown source file for Assignment 4 and relevant rendered HTML, including:
-The original Assignment 3 R Markdown report.
-The updated R Markdown report.
-The rendered HTML report.
 
-The dashboard includes:
-A visualization describing the NHANES sample.
-A gauge showing the percentage of individuals aged 21 years or older.
-A value box showing the percentage of individuals with an average systolic blood pressure above 120 mm Hg.
-exercise-4/
+Contains the R Markdown original files for Assignments 2, 3, and 4.
 
 Software and Packages:
 
