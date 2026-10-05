@@ -1,0 +1,236 @@
+---
+title: "Description of the Cleaned NHANES Dataset"
+author: "G Crawford-Gee"
+date: "`r Sys.Date()`"
+output:
+  pdf_document:
+    toc: false
+bibliography: references.bib
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE
+)
+
+library(tidyverse)
+library(here)
+library(knitr)
+library(kableExtra)
+
+# Load cleaned NHANES data
+cleaned_NHANES <- read_csv(
+  here("cleaned_NHANES.csv")
+)
+
+# Calculate average systolic blood pressure
+cleaned_NHANES <- cleaned_NHANES %>%
+  mutate(
+    avg_sbp = rowMeans(
+      select(
+        .,
+        systolic_bp_1,
+        systolic_bp_2,
+        systolic_bp_3,
+        systolic_bp_4
+      ),
+      na.rm = TRUE
+    ),
+    avg_sbp = ifelse(
+      is.nan(avg_sbp),
+      NA,
+      avg_sbp
+    )
+  )
+```
+
+# Introduction
+
+The National Health and Nutrition Examination Survey (NHANES) is a nationally representative survey conducted by the Centers for Disease Control and Prevention (CDC) to assess the health and nutritional status of the population in the United States. NHANES combines interviews, physical examinations, and laboratory measurements to provide information about a wide range of health indicators [@cdcnhanes].
+
+This report describes the cleaned NHANES dataset used for analysis. The dataset combines demographic and blood pressure information from three NHANES waves, represented by the wave identifiers 2015, 2016, and 2017.
+
+# Sample Size and Biological Sex
+
+The first table describes the overall sample size and distribution of male participants across the three NHANES waves.
+
+```{r sample-table}
+
+sample_male_table <- cleaned_NHANES %>%
+  group_by(wave_id) %>%
+  summarise(
+    `Sample Size` = n(),
+    `Male (n)` = sum(gender == "Male", na.rm = TRUE),
+    `Male (%)` = mean(gender == "Male", na.rm = TRUE) * 100,
+    .groups = "drop"
+  ) %>%
+  mutate(
+    `Male (%)` = round(`Male (%)`, 1)
+  )
+
+kable(
+  sample_male_table,
+  format = "latex",
+  booktabs = TRUE,
+  caption = "Sample Size and Male Participants by NHANES Wave",
+  align = c("l", "r", "r", "r")
+) %>%
+  kable_styling(
+    latex_options = c("hold_position", "scale_down")
+  ) %>%
+  add_header_above(
+    c(
+      " " = 1,
+      "Overall Sample" = 1,
+      "Male Participants" = 2
+    )
+  ) %>%
+  column_spec(
+    1,
+    bold = TRUE
+  ) %>%
+  row_spec(
+    0,
+    bold = TRUE
+  ) %>%
+  footnote(
+    general = "Male percentages represent the percentage of participants identified as male within each wave.",
+    threeparttable = TRUE
+  )
+```
+
+The cleaned dataset contains substantial samples across all three waves, with 10,175 participants in 2015, 9,971 in 2016, and 9,254 in 2017. The male count and percentage provide a description of the biological sex distribution within each wave.
+
+# Ethnicity Distribution
+
+The following table summarizes the distribution of ethnicity across the three NHANES waves. Counts and percentages are calculated within each wave.
+
+
+```{r ethnicity-table}
+ethnicity_table <- cleaned_NHANES %>%
+  group_by(wave_id, ethnicity_2) %>%
+  summarise(
+    n = n(),
+    .groups = "drop"
+  ) %>%
+  group_by(wave_id) %>%
+  mutate(
+    percent = n / sum(n) * 100
+  ) %>%
+  ungroup() %>%
+  mutate(
+    percent = round(percent, 1)
+  ) %>%
+  rename(
+    Wave = wave_id,
+    Ethnicity = ethnicity_2,
+    `n` = n,
+    `%` = percent
+  )
+
+kable(
+  ethnicity_table,
+  format = "latex",
+  booktabs = TRUE,
+  caption = "Ethnicity Distribution by NHANES Wave",
+  align = c("l", "l", "r", "r")
+) %>%
+  kable_styling(
+    latex_options = c("hold_position", "scale_down")
+  ) %>%
+  add_header_above(
+    c(
+      " " = 1,
+      "Ethnicity" = 1,
+      "Participants" = 2
+    )
+  ) %>%
+  column_spec(
+    1,
+    bold = TRUE
+  ) %>%
+  row_spec(
+    0,
+    bold = TRUE
+  ) %>%
+  footnote(
+    general = "Percentages are calculated within each NHANES wave.",
+    threeparttable = TRUE
+  )
+```
+
+The ethnicity table demonstrates the diversity of the cleaned sample and allows the composition of participants to be compared across survey waves. The six ethnicity categories represented in the cleaned dataset are Black, White, Mexican, Other, Asian, and Other Hispanic.
+
+# Average Systolic Blood Pressure
+
+Average systolic blood pressure was calculated from the available systolic blood pressure measurements for each participant. The following table summarizes the distribution of average systolic blood pressure within each NHANES wave.
+
+```{r sbp-table}
+sbp_summary <- cleaned_NHANES %>%
+  group_by(wave_id) %>%
+  summarise(
+    Minimum = min(avg_sbp, na.rm = TRUE),
+    Maximum = max(avg_sbp, na.rm = TRUE),
+    Median = median(avg_sbp, na.rm = TRUE),
+    Mean = mean(avg_sbp, na.rm = TRUE),
+    `Standard Deviation` = sd(avg_sbp, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    across(
+      c(
+        Minimum,
+        Maximum,
+        Median,
+        Mean,
+        `Standard Deviation`
+      ),
+      ~ round(.x, 1)
+    )
+  ) %>%
+  rename(
+    Wave = wave_id
+  )
+
+kable(
+  sbp_summary,
+  format = "latex",
+  booktabs = TRUE,
+  caption = "Summary Statistics for Average Systolic Blood Pressure by NHANES Wave",
+  align = c("l", "r", "r", "r", "r", "r")
+) %>%
+  kable_styling(
+    latex_options = c("hold_position", "scale_down")
+  ) %>%
+  add_header_above(
+    c(
+      " " = 1,
+      "Average Systolic Blood Pressure (mm Hg)" = 5
+    )
+  ) %>%
+  column_spec(
+    1,
+    bold = TRUE
+  ) %>%
+  row_spec(
+    0,
+    bold = TRUE
+  ) %>%
+  footnote(
+    general = "Average systolic blood pressure was calculated from the available systolic blood pressure measurements for each participant. Values are reported in mm Hg.",
+    threeparttable = TRUE
+  )
+```
+
+The average systolic blood pressure summaries allow comparison of blood pressure distributions across the three NHANES waves. The mean and median provide measures of central tendency, while the minimum and maximum describe the observed range. The standard deviation provides information about the variability of average systolic blood pressure within each wave.
+
+# Conclusion
+
+Overall, these tables provide a concise description of the cleaned NHANES dataset. The tables demonstrate how sample characteristics, ethnicity, and average systolic blood pressure can be summarized and compared across survey waves using descriptive statistics and formatted tables.
+
+# References
+
+
