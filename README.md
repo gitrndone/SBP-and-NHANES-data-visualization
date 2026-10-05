@@ -6,6 +6,8 @@ The purpose of this project is to build on previous NHANES analyses while applyi
 
 ## Repository Structure:
 
+Contains the pdf and rmd files for the Assignment 4 with the bibliography file.
+
 ### data/
 
 Contains two datasets required for the analyses, including the cleaned NHANES dataset.
@@ -16,11 +18,11 @@ Contains saved figures from previous Assignment Exercise 3.
 
 ### reports/
 
-Contains the the original PDF reports for all assignments and rendered PDF report for Assignment 4 as well as the html files from Assignments 2, 3, and 4.
+Contains the the original PDF reports for assignments 2 and 3 as well as the merged files of assignment 3 for assignment 4.
 
 ### scripts/
 
-Contains the R Markdown original files for Assignments 2, 3, and 4 and the references file for Assessment 4.
+Contains the R Markdown original files for Assignments 2 and 3 as well as the merged files of assignment 3 for assignment 4.
 
 ## Software and Packages:
 
